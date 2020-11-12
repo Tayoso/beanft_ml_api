@@ -1,3 +1,4 @@
+# IMPORTANT: App works best in python 3.6
 # to launch the app in conda -----------------------------------
 
 # go to parent folder
@@ -6,7 +7,7 @@ cd ..
 # go to root folder
 cd\ 
 
-# go to the folder location of app.py
+# go to the folder location of app.py e.g.
 D:
 cd .\my files_\GIT\Flask_apps_demo\dataplot
 
