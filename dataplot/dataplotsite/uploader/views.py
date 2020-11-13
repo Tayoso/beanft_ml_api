@@ -186,8 +186,9 @@ def plot_2():
         db.create_all()
         db.session.add(data_reload)
         db.session.commit()
-        data_reloaded = FileContents.query.all()
-        new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reloaded[-1]))
+        data_reload = FileContents.query.all()
+        file.save(filename)
+        new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reload[-1]))
         dropdown_list = list(new_data.columns)
         return render_template('plot_2.html',
             dropdown_list = dropdown_list)
@@ -200,14 +201,14 @@ def plot_3():
     x_axis_select_str = str(x_axis_select) 
     y_axis_select_str = str(y_axis_select) 
 
-    data_reloaded = FileContents.query.all()
-    new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reloaded[-1]))
+    data_reload = FileContents.query.all()
+    new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reload[-1]))
     new_data = new_data.dropna()
     x = new_data[x_axis_select_str]
     y = new_data[y_axis_select_str]
     img = io.BytesIO()
     fig= plt.figure(figsize=(8,6))
-    plt.plot(x, y)
+    plt.scatter(x, y)
     plt.xticks(rotation=60)
     plt.savefig(img, format='png') # commented
     plt.close()
