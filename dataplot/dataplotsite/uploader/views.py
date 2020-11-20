@@ -53,6 +53,7 @@ def uploads():
 @uploader.route('/train', methods=['GET', 'POST'])
 def train():
     if request.method == 'POST' and 'inputFiles' in request.files:
+        flash('Just a moment, app is thinking!')
         file = request.files['inputFiles']
         filename = secure_filename(file.filename)
         data_reload = FileContents(name=filename)
@@ -69,7 +70,7 @@ def train():
         new_data_size = new_data.size
         new_data_shape = new_data.shape
         dropdown_list = list(new_data.columns)
-        flash('Just a moment, app is thinking!')
+
         if str(data_reloaded[-1]).split('.')[-1] != 'csv':
             # Forbidden, No Access
             abort(403)
@@ -194,8 +195,8 @@ def plot_2():
             dropdown_list = dropdown_list)
         
 
-@uploader.route("/plot_3" , methods=['GET', 'POST'])
-def plot_3():        
+@uploader.route('/graph', methods=['GET', 'POST'])
+def chart():
     x_axis_select = request.form.get('select_x')
     y_axis_select = request.form.get('select_y')
     x_axis_select_str = str(x_axis_select) 
@@ -206,17 +207,8 @@ def plot_3():
     new_data = new_data.dropna()
     x = new_data[x_axis_select_str]
     y = new_data[y_axis_select_str]
-    img = io.BytesIO()
-    fig= plt.figure(figsize=(8,6))
-    plt.scatter(x, y)
-    plt.xticks(rotation=60)
-    plt.savefig(img, format='png') # commented
-    plt.close()
-    img.seek(0)
-
-    plot_url = base64.b64encode(img.getvalue()).decode()
-    return render_template('plot_3.html',
-        x_axis_select_str = x_axis_select_str,
-        y_axis_select_str = y_axis_select_str,
-        plot_url = plot_url
-        )
+    legend = 'Monthly Data'
+    labels = sorted(x)
+    values = sorted(y)
+    return render_template('chart.html', values=values, labels=labels, legend=legend,
+    x_axis_select_str = x_axis_select_str, y_axis_select_str = y_axis_select_str)
