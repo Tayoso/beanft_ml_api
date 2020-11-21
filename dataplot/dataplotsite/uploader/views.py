@@ -1,7 +1,7 @@
 from flask import render_template, abort, url_for, flash, redirect, request, Blueprint, Response, session
 from flask_login import current_user, login_required
 from dataplotsite import db
-from dataplotsite.models import FileContents
+from dataplotsite.models import FileContents, ModelType, ListXY
 from werkzeug.utils import secure_filename
 import os
 import urllib.request
@@ -86,11 +86,24 @@ def train():
 
 @uploader.route('/fit', methods=['GET', 'POST'])
 def fit():
+    # X and Y vars
     y_var_select = request.form.get('y_var')
     multiselect = request.form.getlist('x_vars')
 
     # Type of forecast
     pred_type_select = request.form.get('rd_pred_type')
+    
+    # commit the prediction type
+    selected_model = ModelType(pred_type_select)
+    db.create_all()
+    db.session.add(selected_model)
+    db.session.commit()
+
+    # commit the X and Y vars
+    xy_selection = ListXY(y_var_select,multiselect)
+    db.create_all()
+    db.session.add(xy_selection)
+    db.session.commit()
 
     # select vars
     data_reloaded = FileContents.query.all()
@@ -108,13 +121,13 @@ def fit():
         # prepare models
         seed = 7
         models = []
-        models.append(('Random Forest Classifier', RandomForestClassifier()))
-        models.append(('Gradient Boosting Classifier', GradientBoostingClassifier()))
-        models.append(('Logistic Regression', LogisticRegression()))
-        models.append(('Linear Discriminant Analysis', LinearDiscriminantAnalysis()))
-        models.append(('KNN', KNeighborsClassifier()))
+        models.append(('RandomForestClassifier', RandomForestClassifier()))
+        models.append(('GradientBoostingClassifier', GradientBoostingClassifier()))
+        models.append(('LogisticRegression', LogisticRegression()))
+        models.append(('LinearDiscriminantAnalysis', LinearDiscriminantAnalysis()))
+        models.append(('KNeighborsClassifier', KNeighborsClassifier()))
         models.append(('GaussianNB', GaussianNB()))
-        models.append(('Support Vector Classifier', SVC()))
+        models.append(('SVC', SVC()))
         # evaluate each model in turn
         results = []
         names = []
@@ -138,12 +151,12 @@ def fit():
                 X[i], _ = pd.factorize(X[i],sort = True)
         # prepare models
         models = []
-        models.append(('Random Forest Regressor', RandomForestRegressor()))
-        models.append(('Gradient Boosting Regressor', GradientBoostingRegressor()))
+        models.append(('RandomForestRegressor', RandomForestRegressor()))
+        models.append(('GradientBoostingRegressor', GradientBoostingRegressor()))
         models.append(('Ridge', Ridge()))
         models.append(('ElasticNet', ElasticNet()))
         models.append(('Lasso', Lasso()))
-        models.append(('Support Vector Regressor', SVR()))
+        models.append(('SVR', SVR()))
         # evaluate each model in turn
         results = []
         names = []

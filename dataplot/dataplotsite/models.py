@@ -54,3 +54,30 @@ class FileContents(db.Model):
 
     def __repr__(self):
         return f"{self.name}"
+
+class ModelType(db.Model):
+    __tablename__ = 'mymodel'
+
+    id = db.Column(db.Integer, primary_key=True)
+    md_type = db.Column(db.String(300))
+
+    def __init__(self, md_type):
+        self.md_type = md_type
+
+    def __repr__(self):
+        return f"{self.md_type}"
+
+
+class ListXY(db.Model):
+    __tablename__ = 'my_xy'
+
+    id = db.Column(db.Integer, primary_key=True)
+    y_var = db.Column(db.String(300))
+    x_vars = db.Column(db.LargeBinary)
+
+    def __init__(self,y_var,x_vars):
+        self.y_var = print(y_var)
+        self.x_vars = print(x_vars)
+
+    def __repr__(self):
+        return f"{self.y_var,self.x_vars}"
