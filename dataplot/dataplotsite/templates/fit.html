@@ -36,32 +36,33 @@
   <div class="large-empty-row">
   </div>
 
-  <div>
-    <span class="input-group-addon">Which of these models would you like to use?</span><br>
-    <select name="selected_model" class="selectpicker form-control">
-      {% for model in model_names %}
-      <option value= "{{ model }}" SELECTED>{{ model }}</option><br>
-      {% endfor %}
-    </select>
-  </div>    
+  <form method="post" action="/predict_data" enctype="multipart/form-data">
+    <div>
+      <span class="input-group-addon">Which of these models would you like to use?</span><br>
+      <select name="selected_model" class="selectpicker form-control">
+        {% for model in model_names %}
+        <option value= "{{ model }}" SELECTED>{{ model }}</option><br>
+        {% endfor %}
+      </select>
+    </div>    
+  
+    <div class="large-empty-row">
+    </div>
+  
+    <div>
+      <span class="input-group-addon">Select file to predict with.</span><br>
+      <p>
+        <dl>
+            <p>
+                <input type="file" name="inputTestFile" multiple="true" autocomplete="off" required>
+            </p>
+        </dl>
+        <br>
+        <input type="submit"  onclick="myAnalyser()" class="btn btn-primary" value="Save predicted data">
+      </p>
+    </div>
+  </form>
 
-  <div class="large-empty-row">
-  </div>
-
-  <div>
-    <span class="input-group-addon">Select file to predict with.</span><br>
-    <p>
-      <form method="post" action="/predict_data" enctype="multipart/form-data">
-          <dl>
-              <p>
-                  <input type="file" name="inputFiles" multiple="true" autocomplete="off" required>
-              </p>
-          </dl>
-          <br>
-          <input type="submit"  onclick="myAnalyser()" class="btn btn-primary" value="Save predicted data">
-      </form>
-    </p>
-  </div>
 
 
 

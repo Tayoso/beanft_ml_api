@@ -94,16 +94,19 @@ def fit():
     pred_type_select = request.form.get('rd_pred_type')
     
     # commit the prediction type
-    selected_model = ModelType(pred_type_select)
+    pred_type_selected = ModelType(pred_type_select)
     db.create_all()
-    db.session.add(selected_model)
-    db.session.commit()
+    db.session.add(pred_type_selected)
+    # db.session.commit()
 
     # commit the X and Y vars
     xy_selection = ListXY(y_var_select,multiselect)
     db.create_all()
     db.session.add(xy_selection)
     db.session.commit()
+
+    # testing - DELETE AFTEWARDS
+    ListXY.query.all()
 
     # select vars
     data_reloaded = FileContents.query.all()
@@ -183,6 +186,97 @@ def fit():
         multiselect = multiselect, 
         model_results = allmodels,
         model_names = names)
+
+
+@uploader.route("/predict_data" , methods=['GET', 'POST'])
+def predict_data():
+
+    if request.method == 'POST' and 'inputTestFile' in request.files:
+        # load selected model type
+        selected_model_type = request.form.get('selected_model')
+        # load the inputTestFile
+        testfile = request.files['inputTestFile']
+        testfilename = secure_filename(testfile.filename)
+
+        # load the previously selected prediction type, X and Y vars
+        pred_type_select_all = ModelType.query.all()
+        x_selected_model = ListXY.query.order_by(ListXY.id.desc()).first().x_vars
+        y_selected_model = ListXY.query.order_by(ListXY.id.desc()).first().y_var
+        pred_type = str(pred_type_select_all[-1])
+        # x_selected_model = str(x_selected_model[-1])
+        # y_selected_model = str(y_selected_model[-1])
+        
+        # load data again to predict
+        data_reloaded = FileContents.query.all()
+        data_reloaded_2 = str(data_reloaded[-1])
+        new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reloaded[-1]))
+        new_data = new_data.dropna() # deletes Na and NaN
+        # import ast
+        # ast.literal_eval(x_selected_model)
+        X = new_data[eval(x_selected_model)]
+        Y = new_data[y_selected_model]
+
+        if request.form.get(pred_type) == "Classification":
+            # Step 1: Refactor columns with text to integer and remove NAs
+            for i in X:
+                if X.dtypes[i] != np.float64 or np.int64:
+                    X[i], _ = pd.factorize(X[i],sort = True)
+
+            # prepare models
+            seed = 7
+            models = []
+            models.append(('Selected Model', selected_model_type()))
+            # evaluate each model in turn
+            results = []
+            names = []
+            allmodels = []
+            scoring = 'accuracy'
+            for name, model in models:
+                kfold = model_selection.KFold(n_splits=10, random_state=seed)
+                cv_results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+                results.append(cv_results)
+                names.append(name)
+                msg = "%s - %f | %f" % (name, cv_results.mean(), cv_results.std())
+                allmodels.append(msg)
+                model_results = results
+                model_names = names
+
+
+        if request.form.get(pred_type) == "Regression":
+            # Step 1: Refactor columns with text to integer and remove NAs
+            for i in X:
+                if X.dtypes[i] != np.float64 or np.int64:
+                    X[i], _ = pd.factorize(X[i],sort = True)
+            # prepare models
+            models = []
+            models.append(('Selected Model', selected_model_type()))
+            # evaluate each model in turn
+            results = []
+            names = []
+            allmodels = []
+            for name, model in models:
+                X_train, X_test, y_train, y_test = train_test_split(X,Y, test_size = 0.3, random_state = 7)
+                # standard scaler #standardises the feature variables
+                sc = StandardScaler()
+                X_train = sc.fit_transform(X_train)
+                X_test = sc.transform(X_test)
+                rfc = RandomForestRegressor(n_estimators=200)
+                rfc.fit(X_train, y_train)
+                pred_rfc = rfc.predict(X_test)
+                mse = mean_squared_error(y_test, pred_rfc)
+                results.append(mse)
+                names.append(name)
+                msg = "%s - %.2f | %s" % (name, (np.sqrt(mse)), "-")
+                allmodels.append(msg)
+                model_results = results
+                model_names = names
+
+
+    return render_template('predict_data.html',
+        testfilename = data_reloaded_2,
+        my_x_selected_model = selected_model_type
+        )
+
 
 
 # PLOT ----------------------------------------------------------

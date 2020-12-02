@@ -73,11 +73,11 @@ class ListXY(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     y_var = db.Column(db.String(300))
-    x_vars = db.Column(db.LargeBinary)
+    x_vars = db.Column(db.String(300))
 
     def __init__(self,y_var,x_vars):
-        self.y_var = print(y_var)
-        self.x_vars = print(x_vars)
+        self.y_var = y_var
+        self.x_vars = str(x_vars)
 
     def __repr__(self):
         return f"{self.y_var,self.x_vars}"
