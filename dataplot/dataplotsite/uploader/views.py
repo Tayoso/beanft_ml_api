@@ -29,6 +29,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
 
+## test api
+import requests
+import json
+import pickle
+import pylint
+import warnings
+warnings.filterwarnings('ignore')
+
 ## Regression
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn import linear_model
@@ -194,7 +202,7 @@ def predict_data():
     if request.method == 'POST' and 'inputTestFile' in request.files:
         # load selected model type
         selected_model_type = request.form.get('selected_model')
-        # load the inputTestFile
+        # load the data to predict on
         testfile = request.files['inputTestFile']
         testfilename = secure_filename(testfile.filename)
 
@@ -241,6 +249,23 @@ def predict_data():
                 model_results = results
                 model_names = names
 
+                # save model and test api
+                saved_model = "final_model.sav"
+                pickle.dump(rfc,open(saved_model,'wb'))
+                # load data to predict on
+                testfilename_csv = pd.read_csv(os.getcwd()+str("\\")+str(testfilename))
+                data = testfilename_csv.dropna() # deletes Na and NaN
+                # jsonify data to comply with api reqs.
+                data=data.to_dict('records')
+                data_json={'data':data}
+                headers = {
+                    'content-type': "application/json",
+                    'cache-control': "no-cache",
+                }
+                r=requests.get(url='http://127.0.0.1:5000/predictions',headers=headers,data=json.dumps(data_json))
+                data=r.json()
+
+                r=requests.get(url='https://ml-beanft.herokuapp.com/predictions',headers=headers,data=json.dumps(data_json))
 
         if request.form.get(pred_type) == "Regression":
             # Step 1: Refactor columns with text to integer and remove NAs
@@ -271,7 +296,7 @@ def predict_data():
                 model_results = results
                 model_names = names
 
-
+ 
     return render_template('predict_data.html',
         testfilename = data_reloaded_2,
         my_x_selected_model = selected_model_type
