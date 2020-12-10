@@ -1,7 +1,8 @@
-from flask import render_template, abort, url_for, flash, redirect, request, Blueprint, Response, session
+from flask import render_template, abort, url_for, flash, redirect, request, Blueprint, Response, session, jsonify, make_response
+from flask_bootstrap import Bootstrap
 from flask_login import current_user, login_required
 from dataplotsite import db
-from dataplotsite.models import FileContents, ModelType, ListXY
+from dataplotsite.models import FileContents, ModelType, ListXY, factorise_data, convert_df_integer_to_numeric, convert_array_integer_to_numeric
 from werkzeug.utils import secure_filename
 import os
 import urllib.request
@@ -50,8 +51,11 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 # Configuration settings
 uploader = Blueprint('uploader', __name__)
-basedir = os.path.abspath(os.path.dirname(__file__))
+basedir = os.path.abspath(os.path.dirname(__name__))
+folder = os.path.abspath(basedir + str('\\dataplotsite\\static\\data_uploads\\'))
 ALLOWED_EXTENSIONS = set(['csv'])
+
+
 
 # Core code
 @uploader.route('/uploads', methods=['GET', 'POST'])
@@ -70,9 +74,9 @@ def train():
         db.session.commit()
         data_reloaded = FileContents.query.all()
         # os.path.join is used so that paths work in every operating system
-        file.save(filename)
+        file.save(os.path.join(folder,filename))
         # Data review
-        new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reloaded[-1]))
+        new_data = pd.read_csv(os.path.join(folder,str(data_reloaded[-1])))
         new_dataplot = new_data.head(10)
         new_data_info = new_data.info
         new_data_size = new_data.size
@@ -118,7 +122,7 @@ def fit():
 
     # select vars
     data_reloaded = FileContents.query.all()
-    new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reloaded[-1]))
+    new_data = pd.read_csv(os.path.join(folder, str(data_reloaded[-1])))
     new_data = new_data.dropna() # deletes Na and NaN
     X = new_data[multiselect]
     Y = new_data[y_var_select]
@@ -205,6 +209,7 @@ def predict_data():
         # load the data to predict on
         testfile = request.files['inputTestFile']
         testfilename = secure_filename(testfile.filename)
+        testfile.save(os.path.join(folder,testfilename))
 
         # load the previously selected prediction type, X and Y vars
         pred_type_select_all = ModelType.query.all()
@@ -217,14 +222,16 @@ def predict_data():
         # load data again to predict
         data_reloaded = FileContents.query.all()
         data_reloaded_2 = str(data_reloaded[-1])
-        new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reloaded[-1]))
+        new_data = pd.read_csv(os.path.join(folder,str(data_reloaded[-1])))
         new_data = new_data.dropna() # deletes Na and NaN
         # import ast
         # ast.literal_eval(x_selected_model)
         X = new_data[eval(x_selected_model)]
         Y = new_data[y_selected_model]
 
-        if request.form.get(pred_type) == "Classification":
+        # try:
+
+        if pred_type == "Classification":
             # Step 1: Refactor columns with text to integer and remove NAs
             for i in X:
                 if X.dtypes[i] != np.float64 or np.int64:
@@ -233,74 +240,86 @@ def predict_data():
             # prepare models
             seed = 7
             models = []
-            models.append(('Selected Model', selected_model_type()))
+            models.append(('Selected Model', eval(selected_model_type)))
             # evaluate each model in turn
             results = []
             names = []
             allmodels = []
             scoring = 'accuracy'
             for name, model in models:
-                kfold = model_selection.KFold(n_splits=10, random_state=seed)
-                cv_results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
-                results.append(cv_results)
-                names.append(name)
-                msg = "%s - %f | %f" % (name, cv_results.mean(), cv_results.std())
-                allmodels.append(msg)
-                model_results = results
-                model_names = names
-
-                # save model and test api
-                saved_model = "final_model.sav"
-                pickle.dump(rfc,open(saved_model,'wb'))
-                # load data to predict on
-                testfilename_csv = pd.read_csv(os.getcwd()+str("\\")+str(testfilename))
-                data = testfilename_csv.dropna() # deletes Na and NaN
-                # jsonify data to comply with api reqs.
-                data=data.to_dict('records')
-                data_json={'data':data}
-                headers = {
-                    'content-type': "application/json",
-                    'cache-control': "no-cache",
-                }
-                r=requests.get(url='http://127.0.0.1:5000/predictions',headers=headers,data=json.dumps(data_json))
-                data=r.json()
-
-                r=requests.get(url='https://ml-beanft.herokuapp.com/predictions',headers=headers,data=json.dumps(data_json))
-
-        if request.form.get(pred_type) == "Regression":
-            # Step 1: Refactor columns with text to integer and remove NAs
-            for i in X:
-                if X.dtypes[i] != np.float64 or np.int64:
-                    X[i], _ = pd.factorize(X[i],sort = True)
-            # prepare models
-            models = []
-            models.append(('Selected Model', selected_model_type()))
-            # evaluate each model in turn
-            results = []
-            names = []
-            allmodels = []
-            for name, model in models:
-                X_train, X_test, y_train, y_test = train_test_split(X,Y, test_size = 0.3, random_state = 7)
+                X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size = 0.3, random_state = 7)
                 # standard scaler #standardises the feature variables
                 sc = StandardScaler()
                 X_train = sc.fit_transform(X_train)
                 X_test = sc.transform(X_test)
-                rfc = RandomForestRegressor(n_estimators=200)
-                rfc.fit(X_train, y_train)
-                pred_rfc = rfc.predict(X_test)
-                mse = mean_squared_error(y_test, pred_rfc)
-                results.append(mse)
-                names.append(name)
-                msg = "%s - %.2f | %s" % (name, (np.sqrt(mse)), "-")
-                allmodels.append(msg)
-                model_results = results
-                model_names = names
+                rfc = RandomForestClassifier(n_estimators=200)
+                rfc.fit(X_train, Y_train)
 
- 
-    return render_template('predict_data.html',
-        testfilename = data_reloaded_2,
-        my_x_selected_model = selected_model_type
-        )
+                # save model and test api
+                saved_model = folder + str("final_model.sav")
+                pickle.dump(rfc,open(saved_model, 'wb'))
+                # load data to predict on
+                testfilename_csv = pd.read_csv(folder + str("\\") + str(testfilename), dtype=str)
+                test_data = testfilename_csv.dropna() # deletes Na and NaN
+                # Step 1: Using Classes, Refactor columns with text to integer and remove NAs
+                # data = factorise_data(test_data)
+                # data = test_data_inst.convert_integer_to_numeric(test_data)
+
+                # Predict on the loaded data, first scale it
+                data = sc.fit_transform(test_data)
+                predictions = rfc.predict(data)
+                # Use classes to apply the int to float function
+                predictions = convert_array_integer_to_numeric(predictions)
+                # jsonify data to comply with api reqs.
+                # data=data.to_dict('records')
+                # data_json={'data':predictions}
+                # headers = {
+                #     'content-type': "application/json",
+                #     'cache-control': "no-cache",
+                # }
+                # r=requests.get(url='http://127.0.0.1:5000/predict_data',headers=headers,data=json.dumps(data_json))
+                # data=r.json()
+
+                # r=requests.get(url='https://ml-beanft.herokuapp.com/predictions',headers=headers,data=json.dumps(data_json))
+
+        # if pred_type == "Regression":
+        #     # Step 1: Refactor columns with text to integer and remove NAs
+        #     for i in X:
+        #         if X.dtypes[i] != np.float64 or np.int64:
+        #             X[i], _ = pd.factorize(X[i],sort = True)
+        #     # prepare models
+        #     models = []
+        #     models.append(('Selected Model', selected_model_type()))
+        #     # evaluate each model in turn
+        #     results = []
+        #     names = []
+        #     allmodels = []
+        #     for name, model in models:
+        #         X_train, X_test, y_train, y_test = train_test_split(X,Y, test_size = 0.3, random_state = 7)
+        #         # standard scaler #standardises the feature variables
+        #         sc = StandardScaler()
+        #         X_train = sc.fit_transform(X_train)
+        #         X_test = sc.transform(X_test)
+        #         rfc = RandomForestRegressor(n_estimators=200)
+        #         rfc.fit(X_train, y_train)
+        #         pred_rfc = rfc.predict(X_test)
+        #         mse = mean_squared_error(y_test, pred_rfc)
+        #         results.append(mse)
+        #         names.append(name)
+        #         msg = "%s - %.2f | %s" % (name, (np.sqrt(mse)), "-")
+        #         allmodels.append(msg)
+        #         model_results = results
+        #         model_names = names
+    else:
+        return jsonify("Error occured while preprocessing your data for our model!")
+    
+        
+    print("Your data has been saved") 
+    # predictions.to_csv(os.path.join(folder,str(testfilename),str("_predicted.csv"))  
+    response={'data':[]}
+    # response={'data':[],'prediction_label':{'species':"setosa",'species':"versicolor",'species':"virginica"}}
+    response['data']=list(predictions)  
+    return make_response(jsonify(response),200)
 
 
 
@@ -320,8 +339,8 @@ def plot_2():
         db.session.add(data_reload)
         db.session.commit()
         data_reload = FileContents.query.all()
-        file.save(filename)
-        new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reload[-1]))
+        file.save(os.path.join(folder,filename))
+        new_data = pd.read_csv(os.path.join(folder, str(data_reload[-1])))
         dropdown_list = list(new_data.columns)
         return render_template('plot_2.html',
             dropdown_list = dropdown_list)
@@ -335,7 +354,7 @@ def chart():
     y_axis_select_str = str(y_axis_select) 
 
     data_reload = FileContents.query.all()
-    new_data = pd.read_csv(os.getcwd()+str("\\")+str(data_reload[-1]))
+    new_data = pd.read_csv(os.path.join(folder,str(data_reload[-1])))
     new_data = new_data.dropna()
     x = new_data[x_axis_select_str]
     y = new_data[y_axis_select_str]
