@@ -65,7 +65,6 @@ def uploads():
 @uploader.route('/train', methods=['GET', 'POST'])
 def train():
     if request.method == 'POST' and 'inputFiles' in request.files:
-        flash('Just a moment, app is thinking!')
         file = request.files['inputFiles']
         filename = secure_filename(file.filename)
         data_reload = FileContents(name=filename)
@@ -82,6 +81,7 @@ def train():
         new_data_size = new_data.size
         new_data_shape = new_data.shape
         dropdown_list = list(new_data.columns)
+        flash('Just a moment, app is thinking!')
 
         if str(data_reloaded[-1]).split('.')[-1] != 'csv':
             # Forbidden, No Access
@@ -129,9 +129,7 @@ def fit():
 
     if request.form.get('rd_pred_type') == "Classification":
         # Step 1: Refactor columns with text to integer and remove NAs
-        for i in X:
-            if X.dtypes[i] != np.float64 or np.int64:
-                X[i], _ = pd.factorize(X[i],sort = True)
+        X = factorise_data(X)
 
         # prepare models
         seed = 7
@@ -161,9 +159,8 @@ def fit():
 
     if request.form.get('rd_pred_type') == "Regression":
         # Step 1: Refactor columns with text to integer and remove NAs
-        for i in X:
-            if X.dtypes[i] != np.float64 or np.int64:
-                X[i], _ = pd.factorize(X[i],sort = True)
+        X = factorise_data(X)
+
         # prepare models
         models = []
         models.append(('RandomForestRegressor', RandomForestRegressor()))
@@ -229,18 +226,15 @@ def predict_data():
         X = new_data[eval(x_selected_model)]
         Y = new_data[y_selected_model]
 
-        # try:
-
         if pred_type == "Classification":
             # Step 1: Refactor columns with text to integer and remove NAs
-            for i in X:
-                if X.dtypes[i] != np.float64 or np.int64:
-                    X[i], _ = pd.factorize(X[i],sort = True)
+            X = factorise_data(X)
 
             # prepare models
             seed = 7
             models = []
             models.append(('Selected Model', eval(selected_model_type)))
+
             # evaluate each model in turn
             results = []
             names = []
@@ -262,6 +256,7 @@ def predict_data():
                 testfilename_csv = pd.read_csv(folder + str("\\") + str(testfilename), dtype=str)
                 test_data = testfilename_csv.dropna() # deletes Na and NaN
                 # Step 1: Using Classes, Refactor columns with text to integer and remove NAs
+                test_data = factorise_data(test_data)
                 # data = factorise_data(test_data)
                 # data = test_data_inst.convert_integer_to_numeric(test_data)
 
@@ -282,38 +277,42 @@ def predict_data():
 
                 # r=requests.get(url='https://ml-beanft.herokuapp.com/predictions',headers=headers,data=json.dumps(data_json))
 
-        # if pred_type == "Regression":
-        #     # Step 1: Refactor columns with text to integer and remove NAs
-        #     for i in X:
-        #         if X.dtypes[i] != np.float64 or np.int64:
-        #             X[i], _ = pd.factorize(X[i],sort = True)
-        #     # prepare models
-        #     models = []
-        #     models.append(('Selected Model', selected_model_type()))
-        #     # evaluate each model in turn
-        #     results = []
-        #     names = []
-        #     allmodels = []
-        #     for name, model in models:
-        #         X_train, X_test, y_train, y_test = train_test_split(X,Y, test_size = 0.3, random_state = 7)
-        #         # standard scaler #standardises the feature variables
-        #         sc = StandardScaler()
-        #         X_train = sc.fit_transform(X_train)
-        #         X_test = sc.transform(X_test)
-        #         rfc = RandomForestRegressor(n_estimators=200)
-        #         rfc.fit(X_train, y_train)
-        #         pred_rfc = rfc.predict(X_test)
-        #         mse = mean_squared_error(y_test, pred_rfc)
-        #         results.append(mse)
-        #         names.append(name)
-        #         msg = "%s - %.2f | %s" % (name, (np.sqrt(mse)), "-")
-        #         allmodels.append(msg)
-        #         model_results = results
-        #         model_names = names
+        if pred_type == "Regression":
+            # Step 1: Refactor columns with text to integer and remove NAs
+            X = factorise_data(X)
+
+            # prepare models
+            models = []
+            models.append(('Selected Model', eval(selected_model_type)))            
+            # evaluate each model in turn
+            results = []
+            names = []
+            allmodels = []
+            for name, model in models:
+                X_train, X_test, y_train, y_test = train_test_split(X,Y, test_size = 0.3, random_state = 7)
+                # standard scaler #standardises the feature variables
+                sc = StandardScaler()
+                X_train = sc.fit_transform(X_train)
+                X_test = sc.transform(X_test)
+                rfc = RandomForestRegressor(n_estimators=200)
+                rfc.fit(X_train, y_train)
+
+                # save model and test api
+                saved_model = os.path.join(folder, str("final_model.sav")) 
+                pickle.dump(rfc,open(saved_model, 'wb'))
+                # load data to predict on
+                testfilename_csv = pd.read_csv(folder + str("\\") + str(testfilename), dtype=str)
+                test_data = testfilename_csv.dropna() # deletes Na and NaN
+                # Step 1: Using Classes, Refactor columns with text to integer and remove NAs
+                test_data = factorise_data(test_data)
+                # Predict on the loaded data, first scale it
+                data = sc.transform(test_data)
+                predictions = rfc.predict(data)
+                # Use classes to apply the int to float function
+                predictions = convert_array_integer_to_numeric(predictions)
     else:
         return jsonify("Error occured while preprocessing your data for our model!")
-    
-        
+      
     print("Your data has been saved") 
     # predictions.to_csv(os.path.join(folder,str(testfilename),str("_predicted.csv"))  
     response={'data':[]}
