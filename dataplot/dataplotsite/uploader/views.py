@@ -256,7 +256,7 @@ def predict_data():
                 rfc.fit(X_train, Y_train)
 
                 # save model and test api
-                saved_model = folder + str("final_model.sav")
+                saved_model = os.path.join(folder, str("final_model.sav")) 
                 pickle.dump(rfc,open(saved_model, 'wb'))
                 # load data to predict on
                 testfilename_csv = pd.read_csv(folder + str("\\") + str(testfilename), dtype=str)
