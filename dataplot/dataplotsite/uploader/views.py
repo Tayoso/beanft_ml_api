@@ -163,8 +163,8 @@ def fit():
 
         # prepare models
         models = []
-        models.append(('RandomForestRegressor', RandomForestRegressor()))
-        models.append(('GradientBoostingRegressor', GradientBoostingRegressor()))
+        models.append(('RandomForestRegressor', RandomForestRegressor(n_estimators=200)))
+        models.append(('GradientBoostingRegressor', GradientBoostingRegressor(n_estimators=200)))
         models.append(('Ridge', Ridge()))
         models.append(('ElasticNet', ElasticNet()))
         models.append(('Lasso', Lasso()))
@@ -179,10 +179,10 @@ def fit():
             sc = StandardScaler()
             X_train = sc.fit_transform(X_train)
             X_test = sc.transform(X_test)
-            rfc = RandomForestRegressor(n_estimators=200)
-            rfc.fit(X_train, y_train)
-            pred_rfc = rfc.predict(X_test)
-            mse = mean_squared_error(y_test, pred_rfc)
+            model_to_fit = model
+            model_to_fit.fit(X_train, y_train)
+            predictions = model_to_fit.predict(X_test)
+            mse = mean_squared_error(y_test, predictions)
             results.append(mse)
             names.append(name)
             msg = "%s - %.2f | %s" % (name, (np.sqrt(mse)), "-")
@@ -233,7 +233,13 @@ def predict_data():
             # prepare models
             seed = 7
             models = []
-            models.append(('Selected Model', eval(selected_model_type)))
+            models.append(('RandomForestClassifier', RandomForestClassifier(n_estimators=200)))
+            models.append(('GradientBoostingClassifier', GradientBoostingClassifier(n_estimators=200)))
+            models.append(('LogisticRegression', LogisticRegression()))
+            models.append(('LinearDiscriminantAnalysis', LinearDiscriminantAnalysis()))
+            models.append(('KNeighborsClassifier', KNeighborsClassifier()))
+            models.append(('GaussianNB', GaussianNB()))
+            models.append(('SVC', SVC()))
 
             # evaluate each model in turn
             results = []
@@ -246,36 +252,39 @@ def predict_data():
                 sc = StandardScaler()
                 X_train = sc.fit_transform(X_train)
                 X_test = sc.transform(X_test)
-                rfc = RandomForestClassifier(n_estimators=200)
-                rfc.fit(X_train, Y_train)
+                if selected_model_type == name:
+                    model_to_fit = model
+                    model_to_fit.fit(X_train, Y_train)
+                    # save model and test api
+                    saved_model = os.path.join(folder, str("final_model.sav")) 
+                    pickle.dump(model_to_fit,open(saved_model, 'wb'))
+                    # load data to predict on
+                    testfilename_csv = pd.read_csv(folder + str("\\") + str(testfilename), dtype=str)
+                    test_data = testfilename_csv.dropna() # deletes Na and NaN
+                    # Step 1: Using Classes, Refactor columns with text to integer and remove NAs
+                    test_data = factorise_data(test_data)
+                    # data = factorise_data(test_data)
+                    # data = test_data_inst.convert_integer_to_numeric(test_data)
 
-                # save model and test api
-                saved_model = os.path.join(folder, str("final_model.sav")) 
-                pickle.dump(rfc,open(saved_model, 'wb'))
-                # load data to predict on
-                testfilename_csv = pd.read_csv(folder + str("\\") + str(testfilename), dtype=str)
-                test_data = testfilename_csv.dropna() # deletes Na and NaN
-                # Step 1: Using Classes, Refactor columns with text to integer and remove NAs
-                test_data = factorise_data(test_data)
-                # data = factorise_data(test_data)
-                # data = test_data_inst.convert_integer_to_numeric(test_data)
+                    # Predict on the loaded data, first scale it
+                    data = sc.fit_transform(test_data)
+                    predictions = model_to_fit.predict(data)
+                    # Use classes to apply the int to float function
+                    predictions = convert_array_integer_to_numeric(predictions)
+                    # jsonify data to comply with api reqs.
+                    # data=data.to_dict('records')
+                    # data_json={'data':predictions}
+                    # headers = {
+                    #     'content-type': "application/json",
+                    #     'cache-control': "no-cache",
+                    # }
+                    # r=requests.get(url='http://127.0.0.1:5000/predict_data',headers=headers,data=json.dumps(data_json))
+                    # data=r.json()
 
-                # Predict on the loaded data, first scale it
-                data = sc.fit_transform(test_data)
-                predictions = rfc.predict(data)
-                # Use classes to apply the int to float function
-                predictions = convert_array_integer_to_numeric(predictions)
-                # jsonify data to comply with api reqs.
-                # data=data.to_dict('records')
-                # data_json={'data':predictions}
-                # headers = {
-                #     'content-type': "application/json",
-                #     'cache-control': "no-cache",
-                # }
-                # r=requests.get(url='http://127.0.0.1:5000/predict_data',headers=headers,data=json.dumps(data_json))
-                # data=r.json()
+                    # r=requests.get(url='https://ml-beanft.herokuapp.com/predictions',headers=headers,data=json.dumps(data_json))
+                else: 
+                    print("There's been an issue fitting your model")
 
-                # r=requests.get(url='https://ml-beanft.herokuapp.com/predictions',headers=headers,data=json.dumps(data_json))
 
         if pred_type == "Regression":
             # Step 1: Refactor columns with text to integer and remove NAs
@@ -283,7 +292,13 @@ def predict_data():
 
             # prepare models
             models = []
-            models.append(('Selected Model', eval(selected_model_type)))            
+            models.append(('RandomForestRegressor', RandomForestRegressor(n_estimators=200)))
+            models.append(('GradientBoostingRegressor', GradientBoostingRegressor(n_estimators=200)))
+            models.append(('Ridge', Ridge()))
+            models.append(('ElasticNet', ElasticNet()))
+            models.append(('Lasso', Lasso()))
+            models.append(('SVR', SVR()))
+
             # evaluate each model in turn
             results = []
             names = []
@@ -294,22 +309,24 @@ def predict_data():
                 sc = StandardScaler()
                 X_train = sc.fit_transform(X_train)
                 X_test = sc.transform(X_test)
-                rfc = RandomForestRegressor(n_estimators=200)
-                rfc.fit(X_train, y_train)
-
-                # save model and test api
-                saved_model = os.path.join(folder, str("final_model.sav")) 
-                pickle.dump(rfc,open(saved_model, 'wb'))
-                # load data to predict on
-                testfilename_csv = pd.read_csv(folder + str("\\") + str(testfilename), dtype=str)
-                test_data = testfilename_csv.dropna() # deletes Na and NaN
-                # Step 1: Using Classes, Refactor columns with text to integer and remove NAs
-                test_data = factorise_data(test_data)
-                # Predict on the loaded data, first scale it
-                data = sc.transform(test_data)
-                predictions = rfc.predict(data)
-                # Use classes to apply the int to float function
-                predictions = convert_array_integer_to_numeric(predictions)
+                if selected_model_type == name:
+                    model_to_fit = model
+                    model_to_fit.fit(X_train, y_train)
+                    # save model and test api
+                    saved_model = os.path.join(folder, str("final_model.sav")) 
+                    pickle.dump(model_to_fit,open(saved_model, 'wb'))
+                    # load data to predict on
+                    testfilename_csv = pd.read_csv(folder + str("\\") + str(testfilename), dtype=str)
+                    test_data = testfilename_csv.dropna() # deletes Na and NaN
+                    # Step 1: Using Classes, Refactor columns with text to integer and remove NAs
+                    test_data = factorise_data(test_data)
+                    # Predict on the loaded data, first scale it
+                    data = sc.transform(test_data)
+                    predictions = model_to_fit.predict(data)
+                    # Use classes to apply the int to float function
+                    predictions = convert_array_integer_to_numeric(predictions)
+                else: 
+                    print("There's been an issue fitting your model")
     else:
         return jsonify("Error occured while preprocessing your data for our model!")
       
