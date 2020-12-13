@@ -56,7 +56,6 @@ folder = os.path.abspath(basedir + str('\\dataplotsite\\static\\data_uploads\\')
 ALLOWED_EXTENSIONS = set(['csv'])
 
 
-
 # Core code
 @uploader.route('/uploads', methods=['GET', 'POST'])
 def uploads():
@@ -109,7 +108,6 @@ def fit():
     pred_type_selected = ModelType(pred_type_select)
     db.create_all()
     db.session.add(pred_type_selected)
-    # db.session.commit()
 
     # commit the X and Y vars
     xy_selection = ListXY(y_var_select,multiselect)
@@ -213,16 +211,14 @@ def predict_data():
         x_selected_model = ListXY.query.order_by(ListXY.id.desc()).first().x_vars
         y_selected_model = ListXY.query.order_by(ListXY.id.desc()).first().y_var
         pred_type = str(pred_type_select_all[-1])
-        # x_selected_model = str(x_selected_model[-1])
-        # y_selected_model = str(y_selected_model[-1])
+
         
         # load data again to predict
         data_reloaded = FileContents.query.all()
         data_reloaded_2 = str(data_reloaded[-1])
         new_data = pd.read_csv(os.path.join(folder,str(data_reloaded[-1])))
         new_data = new_data.dropna() # deletes Na and NaN
-        # import ast
-        # ast.literal_eval(x_selected_model)
+
         X = new_data[eval(x_selected_model)]
         Y = new_data[y_selected_model]
 
@@ -261,30 +257,13 @@ def predict_data():
                     # load data to predict on
                     testfilename_csv = pd.read_csv(folder + str("\\") + str(testfilename), dtype=str)
                     test_data = testfilename_csv.dropna() # deletes Na and NaN
-                    # Step 1: Using Classes, Refactor columns with text to integer and remove NAs
+                    # Using Classes, Refactor columns with text to integer and remove NAs
                     test_data = factorise_data(test_data)
-                    # data = factorise_data(test_data)
-                    # data = test_data_inst.convert_integer_to_numeric(test_data)
-
                     # Predict on the loaded data, first scale it
                     data = sc.fit_transform(test_data)
                     predictions = model_to_fit.predict(data)
                     # Use classes to apply the int to float function
                     predictions = convert_array_integer_to_numeric(predictions)
-                    # jsonify data to comply with api reqs.
-                    # data=data.to_dict('records')
-                    # data_json={'data':predictions}
-                    # headers = {
-                    #     'content-type': "application/json",
-                    #     'cache-control': "no-cache",
-                    # }
-                    # r=requests.get(url='http://127.0.0.1:5000/predict_data',headers=headers,data=json.dumps(data_json))
-                    # data=r.json()
-
-                    # r=requests.get(url='https://ml-beanft.herokuapp.com/predictions',headers=headers,data=json.dumps(data_json))
-                else: 
-                    print("There's been an issue fitting your model")
-
 
         if pred_type == "Regression":
             # Step 1: Refactor columns with text to integer and remove NAs
