@@ -1,19 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="large-empty-row">
-</div>
+
 
 <head>
   <meta charset="UTF-8">
-  <!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}" /> -->
+  <!-- <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> -->
+</head>
+
+<div class="large-empty-row">
+</div>
+
+<body>
   <title>Fit my Model</title>
   <h2>You are predicting using: {{ data_reload }}</h2>
   <br>
   <p>The first 10 rows of your data is previewed in the table below. Scroll down to select your predictor variables and target variable.</p>
-</head>
-
-<body>
   <!-- <div class="alert alert-info" role="alert"><p><span style="color:red">Size</span>: {{ new_data_size }}</p></div>
   <div class="alert alert-info" role="alert"><p><span style="color:red">Information</span>: {{ new_data_info }}</p></div> -->
   <!-- ADD TYPE OF EACH COLUMN -->
@@ -60,12 +62,16 @@
       <div class ="large-empty-row">
       </div>
       <div class="train_submit_button">
-        <input type="submit"  onclick="myAnalyser()" class="btn btn-primary" value="Submit">
+        <input type="submit"  onclick="$('#loading').show();" class="btn btn-primary" value="Submit">
       </div>
     </div>
   </form>
+
+  <div id="loading" style="display:none;"><img src="static/profile_pics/loadingimage.gif" alt="" /><br>Model is thinking!</div>
+
   <div class ="large-empty-row">
   </div>
+
 </body>
 
 {% endblock %}
