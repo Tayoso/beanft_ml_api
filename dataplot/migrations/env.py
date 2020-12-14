@@ -27,9 +27,9 @@ target_metadata = current_app.extensions['migrate'].db.metadata
 
 # Configuration for File Uploads
 files = UploadSet('files',ALL)
-app.config['SECRET_KEY'] = 'mysecretkey'
-app.config['UPLOADED_FILES_DEST'] = 'static/uploadsDB'
-configure_uploads(app,files)
+# app.config['SECRET_KEY'] = 'mysecretkey'
+# app.config['UPLOADED_FILES_DEST'] = 'static/uploadsDB'
+# configure_uploads(app,files)
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///static/uploadsDB/filestorage.db'
 
 # other values from the config, defined by the needs of env.py,

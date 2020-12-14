@@ -304,8 +304,6 @@ def predict_data():
                     predictions = model_to_fit.predict(data)
                     # Use classes to apply the int to float function
                     predictions = convert_array_integer_to_numeric(predictions)
-                else: 
-                    print("There's been an issue fitting your model")
     else:
         return jsonify("Error occured while preprocessing your data for our model!")
       

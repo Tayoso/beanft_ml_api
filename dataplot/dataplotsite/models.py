@@ -120,5 +120,3 @@ def convert_array_integer_to_numeric(array_obj):
     if array_obj.dtype == 'int64':
         array_obj = array_obj.astype(np.float64)
     return(array_obj)
-
-# Machine Learning functions
