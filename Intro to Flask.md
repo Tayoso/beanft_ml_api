@@ -66,7 +66,16 @@ if __name__=='__main__':
 
 To debug the app, copy the pin when the debug prompt comes up. Importantly, the below is an example of the temporary pin provided and will be displayed in the terminal. When the app is ready for production, its important to set *debug* back to '`False`'.
 
-![](C:\Users\TOsosanya\Desktop\Screenshot 2020-12-15 192715.png)
+```
+* Serving Flask app "app" (lazy loading)
+* Environment: production
+  WARNING: This is a development server. Do not use it in a production deployment.
+  Use a production WSGI server instead.
+* Debug mode: on
+* Restarting with stat
+* Debugger is active!
+* Debugger PIN: 930-225-787
+```
 
 
 
