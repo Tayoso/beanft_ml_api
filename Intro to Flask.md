@@ -66,7 +66,7 @@ if __name__=='__main__':
 
 To debug the app, copy the pin when the debug prompt comes up. Importantly, the below is an example of the temporary pin provided and will be displayed in the terminal. When the app is ready for production, its important to set *debug* back to '`False`'.
 
-![image-20201215165511929](C:\Users\TOsosanya\AppData\Roaming\Typora\typora-user-images\image-20201215165511929.png)
+![](C:\Users\TOsosanya\Desktop\Screenshot 2020-12-15 192715.png)
 
 
 
