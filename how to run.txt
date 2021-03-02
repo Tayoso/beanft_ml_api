@@ -1,0 +1,15 @@
+# IMPORTANT: App works best in python 3.6
+# Test data is in .\bean_ft\beanftsite\static\data_upload
+
+# Launch App -------------------------
+
+# Install all dependencies for a project
+pipenv install --dev
+
+# Check your installed dependencies for security vulnerabilities
+pipenv check
+
+set FLASK_APP=app.py
+
+# run the app
+python app.py
