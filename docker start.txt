@@ -1,0 +1,7 @@
+
+
+# Now that we have a Dockerfile, let’s verify it builds correctly:
+docker build -t beanft_docker:1.0 .
+
+# After the build completes, we can run the container:
+docker run -p 5000:5000 --name beanft_docker_app beanft_docker:1.0

@@ -307,7 +307,7 @@ def predict_data():
     else:
         return jsonify("Error occured while preprocessing your data for our model!")
       
-    print("Your data has been saved") 
+    print("Your model has been saved") 
     # predictions.to_csv(os.path.join(folder,str(testfilename),str("_predicted.csv"))  
     response={'data':[]}
     # response={'data':[],'prediction_label':{'species':"setosa",'species':"versicolor",'species':"virginica"}}
