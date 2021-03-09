@@ -86,7 +86,7 @@ To debug the app, copy the pin when the debug prompt comes up. Importantly, the 
 cd flask-apps-demo/beanft
 
 # set the default app to app.py
-set FLASK_APP = app.py
+set FLASK_APP=app.py
 
 # run the flask app
 python app.py

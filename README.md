@@ -48,7 +48,7 @@ Free to use.
 
 ## For more on Flask
 
-If you are new to flask and want to find out more, read
+If you are new to flask and want to find out more, read ***Intro_to_Flask.md***
 
 [Intro to Flask]: ./Intro_to_Flask.md
 
