@@ -50,7 +50,7 @@ Free to use.
 
 If you are new to flask and want to find out more, read
 
-[Intro to Flask]: ./Intro_to_Flask.md	"Intro_to_Flask"
+[Intro to Flask]: ./Intro_to_Flask.md
 
 
 
